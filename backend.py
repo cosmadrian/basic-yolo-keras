@@ -16,3 +16,12 @@ class BaseFeatureExtractor(object):
 
     def extract(self, input_image):
         return self.feature_extractor(input_image)
+
+class TinySqueezeResNet(BaseFeatureExtractor):
+    def __init__(self, input_size):
+        # TODO load weights into self.feature_extractor
+        pass
+
+    def normalize(self, image):
+        # trained without normalization
+        return image

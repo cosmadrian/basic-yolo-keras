@@ -37,7 +37,7 @@ class YOLO(object):
 
     self.feature_extractor = TinyYoloFeature(self.input_size)
 
-        print self.feature_extractor.get_output_shape()
+        print(self.feature_extractor.get_output_shape())
         self.grid_h, self.grid_w = self.feature_extractor.get_output_shape()
         features = self.feature_extractor.extract(input_image)
 

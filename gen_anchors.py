@@ -82,7 +82,7 @@ def run_kmeans(ann_dims, anchor_num):
             distances.append(d)
         distances = np.array(distances) # distances.shape = (ann_num, anchor_num)
 
-        print "iteration {}: dists = {}".format(iteration, np.sum(np.abs(old_distances-distances)))
+        print("iteration {}: dists = {}".format(iteration, np.sum(np.abs(old_distances-distances))))
 
         #assign samples to centroids
         assignments = np.argmin(distances,axis=1)
@@ -105,7 +105,7 @@ def main(argv):
     num_anchors = args.anchors
 
     with open(config_path) as config_buffer:
-        config = json.loads(config_buffer.read())
+        config = json.load(config_buffer)
 
     train_imgs, train_labels = parse_annotation(config['train']['train_annot_folder'],
                                                 config['train']['train_image_folder'],
@@ -129,7 +129,7 @@ def main(argv):
     centroids = run_kmeans(annotation_dims, num_anchors)
 
     # write anchors to file
-    print '\naverage IOU for', num_anchors, 'anchors:', '%0.2f' % avg_IOU(annotation_dims, centroids)
+    print('\naverage IOU for', num_anchors, 'anchors:', '%0.2f' % avg_IOU(annotation_dims, centroids))
     print_anchors(centroids)
 
 if __name__ == '__main__':
