@@ -7,7 +7,13 @@ from imgaug import augmenters as iaa
 from keras.utils import Sequence
 import json
 from utils import BoundBox, normalize, bbox_iou
-
+"""
+    There is only one type of label: "human".
+    Annotation file format:
+    {
+        'filename': [[x, y, w, h]]
+    }
+"""
 def parse_annotation(annotation_file, image_dir):
     all_imgs = []
     with open(annotation_file, 'rt') as f:
