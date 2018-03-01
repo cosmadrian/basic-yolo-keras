@@ -1,15 +1,14 @@
 import keras
+from keras_compressor import custom_layers
 
 class BaseFeatureExtractor(object):
-    """docstring for ClassName"""
-
     # to be defined in each subclass
     def __init__(self, input_size):
-        raise NotImplementedError("error message")
+        raise NotImplementedError()
 
     # to be defined in each subclass
     def normalize(self, image):
-        raise NotImplementedError("error message")
+        raise NotImplementedError()
 
     def get_output_shape(self):
         return self.feature_extractor.get_output_shape_at(-1)[1:3]
@@ -17,9 +16,10 @@ class BaseFeatureExtractor(object):
     def extract(self, input_image):
         return self.feature_extractor(input_image)
 
+
 class TinySqueezeResNet(BaseFeatureExtractor):
     def __init__(self, input_size):
-        # TODO load weights into self.feature_extractor
+        # TODO
         pass
 
     def normalize(self, image):
