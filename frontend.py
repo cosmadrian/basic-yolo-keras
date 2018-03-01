@@ -393,6 +393,7 @@ class YOLO(object):
 
         ############################################
         # Make a few callbacks
+        # TODO more callbacks
         ############################################
 
         early_stop = EarlyStopping(monitor='val_loss',

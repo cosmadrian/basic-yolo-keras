@@ -61,7 +61,7 @@ def print_anchors(centroids):
     r += '%0.2f,%0.2f' % (anchors[sorted_indices[-1:],0], anchors[sorted_indices[-1:],1])
     r += "]"
 
-    print r
+    print(r)
 
 def run_kmeans(ann_dims, anchor_num):
     ann_num = ann_dims.shape[0]
@@ -107,9 +107,8 @@ def main(argv):
     with open(config_path) as config_buffer:
         config = json.load(config_buffer)
 
-    train_imgs, train_labels = parse_annotation(config['train']['train_annot_folder'],
-                                                config['train']['train_image_folder'],
-                                                config['model']['labels'])
+    train_imgs, train_labels = parse_annotation(config['train']['train_annotation_file'],
+                                                config['train']['train_image_folder'])
 
     grid_w = config['model']['input_size']/32
     grid_h = config['model']['input_size']/32
@@ -117,15 +116,14 @@ def main(argv):
     # run k_mean to find the anchors
     annotation_dims = []
     for image in train_imgs:
-        cell_w = image['width']/grid_w
-        cell_h = image['height']/grid_h
+        cell_w = image['width'] / grid_w
+        cell_h = image['height'] / grid_h
 
         for obj in image['object']:
             relative_w = (float(obj['xmax']) - float(obj['xmin']))/cell_w
             relatice_h = (float(obj["ymax"]) - float(obj['ymin']))/cell_h
-            annotation_dims.append(map(float, (relative_w,relatice_h)))
+            annotation_dims.append((float(relative_w), float(relatice_h)))
     annotation_dims = np.array(annotation_dims)
-
     centroids = run_kmeans(annotation_dims, num_anchors)
 
     # write anchors to file
