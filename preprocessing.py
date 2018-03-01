@@ -40,6 +40,7 @@ def parse_annotation(annotation_file, image_dir):
     return all_imgs, seen_labels
 
 
+# TODO make sense of this
 class BatchGenerator(Sequence):
     def __init__(self, images,
                  config,

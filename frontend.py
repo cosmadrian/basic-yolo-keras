@@ -5,9 +5,9 @@ import numpy as np
 import os
 import cv2
 from keras.layers.merge import concatenate
-from keras.optimizers import SGD, Adam, RMSprop
+from keras.optimizers import Adam,
 from preprocessing import BatchGenerator
-from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+from keras.callbacks import TerminateOnNaN, ModelCheckpoint, TensorBoard
 from utils import BoundBox, bbox_iou, interval_overlap, decode_netout
 
 
@@ -274,6 +274,7 @@ class YOLO(object):
               no_object_scale,
               coord_scale,
               class_scale,
+              log_dir,
               saved_weights_name='best_weights.h5',
               debug=False):
 
@@ -317,6 +318,7 @@ class YOLO(object):
             'TRUE_BOX_BUFFER': self.max_box_per_image,
         }
 
+        # TODO split training data into train/val sets
         train_batch = BatchGenerator(train_imgs,
                                      generator_config,
                                      norm=self.feature_extractor.normalize)
@@ -325,30 +327,10 @@ class YOLO(object):
                                      norm=self.feature_extractor.normalize,
                                      jitter=False)
 
-        ############################################
-        # Make a few callbacks
-        # TODO more callbacks
-        ############################################
-
-        early_stop = EarlyStopping(monitor='val_loss',
-                                   min_delta=0.001,
-                                   patience=3,
-                                   mode='min',
-                                   verbose=1)
-        checkpoint = ModelCheckpoint(saved_weights_name,
-                                     monitor='val_loss',
-                                     verbose=1,
-                                     save_best_only=True,
-                                     mode='min',
-                                     period=1)
-        tb_counter = len([log for log in os.listdir(
-            os.path.expanduser('~/logs/')) if 'yolo' in log]) + 1
-        tensorboard = TensorBoard(log_dir=os.path.expanduser('~/logs/') + 'yolo' + '_' + str(tb_counter),
-                                  histogram_freq=0,
-                                  # write_batch_performance=True,
-                                  write_graph=True,
-                                  write_images=False)
-
+        callbacks = []
+        callback.append(ModelCheckpoint(saved_weights_name, monitor='val_loss', period=1))
+        callbacks.append(TensorBoard(log_dir=self.config['log_dir'], histogram_freq=0,write_graph=True, write_images=True))
+        callbacks.append(TerminateOnNaN())
         ############################################
         # Start the training process
         ############################################
@@ -357,11 +339,9 @@ class YOLO(object):
                                  steps_per_epoch=len(
                                      train_batch) * train_times,
                                  epochs=nb_epoch,
-                                 verbose=1,
                                  validation_data=valid_batch,
                                  validation_steps=len(
                                      valid_batch) * valid_times,
-                                 callbacks=[early_stop,
-                                            checkpoint, tensorboard],
+                                 callbacks=callbacks,
                                  workers=3,
                                  max_queue_size=8)
