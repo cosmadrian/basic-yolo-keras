@@ -68,15 +68,14 @@ def interval_overlap(interval_a, interval_b):
         else:
             return min(x2, x4) - x3
 
-def decode_netout(netout, obj_threshold=0.3, nms_threshold=0.3, anchors, nb_class):
+def decode_netout(netout, obj_threshold=0.3, nms_threshold=0.3, anchors=[], nb_class=1):
     grid_h, grid_w, nb_box = netout.shape[:3]
 
     boxes = []
 
     # decode the output by the network
     netout[..., 4] = sigmoid(netout[..., 4])
-    netout[..., 5:] = netout[..., 4][...,
-                                     np.newaxis] * softmax(netout[..., 5:])
+    netout[..., 5:] = netout[..., 4][..., np.newaxis] * softmax(netout[..., 5:])
     netout[..., 5:] *= netout[..., 5:] > obj_threshold
 
     for row in range(grid_h):

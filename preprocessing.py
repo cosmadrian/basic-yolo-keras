@@ -2,7 +2,6 @@ import os
 import cv2
 import copy
 import numpy as np
-import imgaug as ia
 from imgaug import augmenters as iaa
 from keras.utils import Sequence
 import json
@@ -86,14 +85,11 @@ class BatchGenerator(Sequence):
         instance_count = 0
 
         # input images
-        x_batch = np.zeros(
-            (r_bound - l_bound, self.config['IMAGE_H'], self.config['IMAGE_W'], 3))
-        # list of self.config['TRUE_self.config['BOX']_BUFFER'] GT boxes
-        b_batch = np.zeros((r_bound - l_bound, 1, 1, 1,
-                            self.config['TRUE_BOX_BUFFER'], 4))
+        x_batch = np.zeros((r_bound - l_bound, self.config['IMAGE_H'], self.config['IMAGE_W'], 3))
+        # list of self.config['TRUE_BOX_BUFFER'] GT boxes
+        b_batch = np.zeros((r_bound - l_bound, 1, 1, 1, self.config['TRUE_BOX_BUFFER'], 4))
         # desired network output
-        y_batch = np.zeros(
-            (r_bound - l_bound, self.config['GRID_H'],  self.config['GRID_W'], self.config['BOX'], 4+1+self.config['CLASS']))
+        y_batch = np.zeros((r_bound - l_bound, self.config['GRID_H'],  self.config['GRID_W'], self.config['BOX'], 4 + 1 + self.config['CLASS']))
 
         for train_instance in self.images[l_bound:r_bound]:
             # augment input image and fix object's position and size
@@ -105,11 +101,9 @@ class BatchGenerator(Sequence):
             for obj in all_objs:
                 if obj['xmax'] > obj['xmin'] and obj['ymax'] > obj['ymin'] and obj['name'] in self.config['LABELS']:
                     center_x = .5*(obj['xmin'] + obj['xmax'])
-                    center_x = center_x / \
-                        (float(self.config['IMAGE_W']) / self.config['GRID_W'])
+                    center_x = center_x / (float(self.config['IMAGE_W']) / self.config['GRID_W'])
                     center_y = .5*(obj['ymin'] + obj['ymax'])
-                    center_y = center_y / \
-                        (float(self.config['IMAGE_H']) / self.config['GRID_H'])
+                    center_y = center_y / (float(self.config['IMAGE_H']) / self.config['GRID_H'])
 
                     grid_x = int(np.floor(center_x))
                     grid_y = int(np.floor(center_y))
@@ -117,10 +111,8 @@ class BatchGenerator(Sequence):
                     if grid_x < self.config['GRID_W'] and grid_y < self.config['GRID_H']:
                         obj_indx = self.config['LABELS'].index(obj['name'])
 
-                        center_w = (obj['xmax'] - obj['xmin']) / (
-                            float(self.config['IMAGE_W']) / self.config['GRID_W'])  # unit: grid cell
-                        center_h = (obj['ymax'] - obj['ymin']) / (
-                            float(self.config['IMAGE_H']) / self.config['GRID_H'])  # unit: grid cell
+                        center_w = (obj['xmax'] - obj['xmin']) / (float(self.config['IMAGE_W']) / self.config['GRID_W'])  # unit: grid cell
+                        center_h = (obj['ymax'] - obj['ymin']) / (float(self.config['IMAGE_H']) / self.config['GRID_H'])  # unit: grid cell
 
                         box = [center_x, center_y, center_w, center_h]
 
@@ -128,10 +120,7 @@ class BatchGenerator(Sequence):
                         best_anchor = -1
                         max_iou = -1
 
-                        shifted_box = BoundBox(0,
-                                               0,
-                                               center_w,
-                                               center_h)
+                        shifted_box = BoundBox(0, 0, center_w, center_h)
 
                         for i in range(len(self.anchors)):
                             anchor = self.anchors[i]
@@ -142,12 +131,9 @@ class BatchGenerator(Sequence):
                                 max_iou = iou
 
                         # assign ground truth x, y, w, h, confidence and class probs to y_batch
-                        y_batch[instance_count, grid_y,
-                                grid_x, best_anchor, 0:4] = box
-                        y_batch[instance_count, grid_y,
-                                grid_x, best_anchor, 4] = 1.
-                        y_batch[instance_count, grid_y, grid_x,
-                                best_anchor, 5+obj_indx] = 1
+                        y_batch[instance_count, grid_y, grid_x, best_anchor, 0:4] = box
+                        y_batch[instance_count, grid_y, grid_x, best_anchor, 4] = 1.
+                        y_batch[instance_count, grid_y, grid_x, best_anchor, 5 + obj_indx] = 1
 
                         # assign the true box to b_batch
                         b_batch[instance_count, 0, 0, 0, true_box_index] = box
@@ -156,25 +142,10 @@ class BatchGenerator(Sequence):
                         true_box_index = true_box_index % self.config['TRUE_BOX_BUFFER']
 
             # assign input image to x_batch
-            if self.norm != None:
-                x_batch[instance_count] = self.norm(img)
-            else:
-                # plot image and bounding boxes for sanity check
-                for obj in all_objs:
-                    if obj['xmax'] > obj['xmin'] and obj['ymax'] > obj['ymin']:
-                        cv2.rectangle(img[:, :, ::-1], (obj['xmin'], obj['ymin']),
-                                      (obj['xmax'], obj['ymax']), (255, 0, 0), 3)
-                        cv2.putText(img[:, :, ::-1], obj['name'],
-                                    (obj['xmin']+2, obj['ymin']+12),
-                                    0, 1.2e-3 * img.shape[0],
-                                    (0, 255, 0), 2)
-
-                x_batch[instance_count] = img
+            x_batch[instance_count] = img
 
             # increase instance counter in current batch
             instance_count += 1
-
-        # print ' new batch created', idx
 
         return [x_batch, b_batch], y_batch
 

@@ -59,10 +59,8 @@ class YOLO(object):
         layer = self.model.layers[-4]
         weights = layer.get_weights()
 
-        new_kernel = np.random.normal(
-            size=weights[0].shape)/(self.grid_h*self.grid_w)
-        new_bias = np.random.normal(
-            size=weights[1].shape)/(self.grid_h*self.grid_w)
+        new_kernel = np.random.normal(size=weights[0].shape) / (self.grid_h*self.grid_w)
+        new_bias = np.random.normal(size=weights[1].shape) / (self.grid_h*self.grid_w)
 
         layer.set_weights([new_kernel, new_bias])
 
@@ -72,12 +70,10 @@ class YOLO(object):
     def custom_loss(self, y_true, y_pred):
         mask_shape = tf.shape(y_true)[:4]
 
-        cell_x = tf.to_float(tf.reshape(tf.tile(tf.range(self.grid_w), [
-                             self.grid_h]), (1, self.grid_h, self.grid_w, 1, 1)))
+        cell_x = tf.to_float(tf.reshape(tf.tile(tf.range(self.grid_w), [self.grid_h]), (1, self.grid_h, self.grid_w, 1, 1)))
         cell_y = tf.transpose(cell_x, (0, 2, 1, 3, 4))
 
-        cell_grid = tf.tile(
-            tf.concat([cell_x, cell_y], -1), [self.batch_size, 1, 1, 5, 1])
+        cell_grid = tf.tile(tf.concat([cell_x, cell_y], -1), [self.batch_size, 1, 1, 5, 1])
 
         coord_mask = tf.zeros(mask_shape)
         conf_mask = tf.zeros(mask_shape)
@@ -93,8 +89,7 @@ class YOLO(object):
         pred_box_xy = tf.sigmoid(y_pred[..., :2]) + cell_grid
 
         # adjust w and h
-        pred_box_wh = tf.exp(
-            y_pred[..., 2:4]) * np.reshape(self.anchors, [1, 1, 1, self.nb_box, 2])
+        pred_box_wh = tf.exp(y_pred[..., 2:4]) * np.reshape(self.anchors, [1, 1, 1, self.nb_box, 2])
 
         # adjust confidence
         pred_box_conf = tf.sigmoid(y_pred[..., 4])
@@ -180,8 +175,7 @@ class YOLO(object):
         conf_mask = conf_mask + y_true[..., 4] * self.object_scale
 
         # class mask: simply the position of the ground truth boxes (the predictors)
-        class_mask = y_true[..., 4] * \
-            tf.gather(self.class_wt, true_box_class) * self.class_scale
+        class_mask = y_true[..., 4] * tf.gather(self.class_wt, true_box_class) * self.class_scale
 
         """
         Warm-up training
@@ -205,43 +199,29 @@ class YOLO(object):
         nb_conf_box = tf.reduce_sum(tf.to_float(conf_mask > 0.0))
         nb_class_box = tf.reduce_sum(tf.to_float(class_mask > 0.0))
 
-        loss_xy = tf.reduce_sum(
-            tf.square(true_box_xy-pred_box_xy) * coord_mask) / (nb_coord_box + 1e-6) / 2.
-        loss_wh = tf.reduce_sum(
-            tf.square(true_box_wh-pred_box_wh) * coord_mask) / (nb_coord_box + 1e-6) / 2.
-        loss_conf = tf.reduce_sum(
-            tf.square(true_box_conf-pred_box_conf) * conf_mask) / (nb_conf_box + 1e-6) / 2.
-        loss_class = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=true_box_class, logits=pred_box_class)
-        loss_class = tf.reduce_sum(
-            loss_class * class_mask) / (nb_class_box + 1e-6)
+        loss_xy = tf.reduce_sum(tf.square(true_box_xy-pred_box_xy) * coord_mask) / (nb_coord_box + 1e-6) / 2.
+        loss_wh = tf.reduce_sum(tf.square(true_box_wh-pred_box_wh) * coord_mask) / (nb_coord_box + 1e-6) / 2.
+        loss_conf = tf.reduce_sum(tf.square(true_box_conf-pred_box_conf) * conf_mask) / (nb_conf_box + 1e-6) / 2.
+        loss_class = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class, logits=pred_box_class)
+        loss_class = tf.reduce_sum(loss_class * class_mask) / (nb_class_box + 1e-6)
 
         loss = loss_xy + loss_wh + loss_conf + loss_class
 
         if self.debug:
             nb_true_box = tf.reduce_sum(y_true[..., 4])
-            nb_pred_box = tf.reduce_sum(tf.to_float(
-                true_box_conf > 0.5) * tf.to_float(pred_box_conf > 0.3))
+            nb_pred_box = tf.reduce_sum(tf.to_float(true_box_conf > 0.5) * tf.to_float(pred_box_conf > 0.3))
 
             current_recall = nb_pred_box/(nb_true_box + 1e-6)
             total_recall = tf.assign_add(total_recall, current_recall)
 
-            loss = tf.Print(loss, [tf.zeros((1))],
-                            message='Dummy Line \t', summarize=1000)
-            loss = tf.Print(loss, [loss_xy],
-                            message='Loss XY \t', summarize=1000)
-            loss = tf.Print(loss, [loss_wh],
-                            message='Loss WH \t', summarize=1000)
-            loss = tf.Print(loss, [loss_conf],
-                            message='Loss Conf \t', summarize=1000)
-            loss = tf.Print(loss, [loss_class],
-                            message='Loss Class \t', summarize=1000)
-            loss = tf.Print(
-                loss, [loss], message='Total Loss \t', summarize=1000)
-            loss = tf.Print(loss, [current_recall],
-                            message='Current Recall \t', summarize=1000)
-            loss = tf.Print(loss, [total_recall/seen],
-                            message='Average Recall \t', summarize=1000)
+            loss = tf.Print(loss, [tf.zeros((1))], message='Dummy Line \t', summarize=1000)
+            loss = tf.Print(loss, [loss_xy], message='Loss XY \t', summarize=1000)
+            loss = tf.Print(loss, [loss_wh], message='Loss WH \t', summarize=1000)
+            loss = tf.Print(loss, [loss_conf], message='Loss Conf \t', summarize=1000)
+            loss = tf.Print(loss, [loss_class], message='Loss Class \t', summarize=1000)
+            loss = tf.Print(loss, [loss], message='Total Loss \t', summarize=1000)
+            loss = tf.Print(loss, [current_recall], message='Current Recall \t', summarize=1000)
+            loss = tf.Print(loss, [total_recall/seen], message='Average Recall \t', summarize=1000)
 
         return loss
 
