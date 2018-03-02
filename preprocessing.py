@@ -40,7 +40,6 @@ def parse_annotation(annotation_file, image_dir):
     return all_imgs, seen_labels
 
 
-# TODO make sense of this
 class BatchGenerator(Sequence):
     def __init__(self, images,
                  config,
@@ -59,32 +58,16 @@ class BatchGenerator(Sequence):
         self.anchors = [BoundBox(0, 0, config['ANCHORS'][2*i], config['ANCHORS'][2*i+1])
                         for i in range(int(len(config['ANCHORS'])//2))]
 
-        def sometimes(aug): return iaa.Sometimes(0.5, aug)
-        self.aug_pipe = iaa.Sequential(
-            [
-                iaa.SomeOf((0, 5),
-                           [
-                    iaa.OneOf([
-                        iaa.GaussianBlur((0, 3.0)),
-                        iaa.AverageBlur(k=(2, 7)),
-                        iaa.MedianBlur(k=(3, 11)),
-                    ]),
-                    iaa.Sharpen(alpha=(0, 1.0), lightness=(0.75, 1.5)),
-                    iaa.AdditiveGaussianNoise(loc=0, scale=(
-                        0.0, 0.05*255), per_channel=0.5),
-                    iaa.OneOf([
-                        iaa.Dropout((0.01, 0.1), per_channel=0.5),
-                    ]),
-                    iaa.Add((-10, 10), per_channel=0.5),
-                    iaa.Multiply((0.5, 1.5), per_channel=0.5),
+        self.aug_pipe = iaa.Sequential([
+            iaa.Sometimes(0.3, [
+                iaa.OneOf([
                     iaa.ContrastNormalization((0.5, 2.0), per_channel=0.5),
+                    iaa.Grayscale(alpha=(0.0, 1.0)),
+                    iaa.Add((-10, 10), per_channel=0.5),
+                    ])
+                ]),
+            ])
 
-                ],
-                    random_order=True
-                )
-            ],
-            random_order=True
-        )
 
         if shuffle:
             np.random.shuffle(self.images)
@@ -199,7 +182,6 @@ class BatchGenerator(Sequence):
         if self.shuffle:
             np.random.shuffle(self.images)
 
-    # TODO, don't scale cuz it's already scaled
     def aug_image(self, train_instance, jitter):
         image_name = train_instance['filename']
         image = cv2.imread(image_name)
@@ -211,49 +193,15 @@ class BatchGenerator(Sequence):
         all_objs = copy.deepcopy(train_instance['object'])
 
         if jitter:
-            # scale the image
-            scale = np.random.uniform() / 10. + 1.
-            image = cv2.resize(image, (0, 0), fx=scale, fy=scale)
+            image = self.aug_pipe.augment_image(image)
 
-            # translate the image
-            max_offx = (scale-1.) * w
-            max_offy = (scale-1.) * h
-            offx = int(np.random.uniform() * max_offx)
-            offy = int(np.random.uniform() * max_offy)
-
-            image = image[offy: (offy + h), offx: (offx + w)]
-
-            # flip the image
             flip = np.random.binomial(1, .5)
             if flip > 0.5:
                 image = cv2.flip(image, 1)
 
-            image = self.aug_pipe.augment_image(image)
-
-        # resize the image to standard size
-        image = cv2.resize(
-            image, (self.config['IMAGE_H'], self.config['IMAGE_W']))
-        image = image[:, :, ::-1]
-
-        # fix object's position and size
-        for obj in all_objs:
-            for attr in ['xmin', 'xmax']:
-                if jitter:
-                    obj[attr] = int(obj[attr] * scale - offx)
-
-                obj[attr] = int(obj[attr] * float(self.config['IMAGE_W']) / w)
-                obj[attr] = max(min(obj[attr], self.config['IMAGE_W']), 0)
-
-            for attr in ['ymin', 'ymax']:
-                if jitter:
-                    obj[attr] = int(obj[attr] * scale - offy)
-
-                obj[attr] = int(obj[attr] * float(self.config['IMAGE_H']) / h)
-                obj[attr] = max(min(obj[attr], self.config['IMAGE_H']), 0)
-
-            if jitter and flip > 0.5:
-                xmin = obj['xmin']
+        if jitter and flip > 0.5:
+            for obj in all_objs:
                 obj['xmin'] = self.config['IMAGE_W'] - obj['xmax']
-                obj['xmax'] = self.config['IMAGE_W'] - xmin
+                obj['xmax'] = self.config['IMAGE_W'] - obj['xmin']
 
         return image, all_objs
