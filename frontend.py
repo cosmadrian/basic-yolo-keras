@@ -5,14 +5,14 @@ import numpy as np
 import os
 import cv2
 from keras.layers.merge import concatenate
-from keras.optimizers import Adam,
+from keras.optimizers import Adam
 from preprocessing import BatchGenerator
 from keras.callbacks import TerminateOnNaN, ModelCheckpoint, TensorBoard
 from utils import BoundBox, bbox_iou, interval_overlap, decode_netout
+from backend import ResNet50Features
 
 
 class YOLO(object):
-    # TODO make sense of this
     def __init__(self, architecture,
                  input_size,
                  labels,
@@ -37,7 +37,7 @@ class YOLO(object):
         input_image = Input(shape=(self.input_size, self.input_size, 3))
         self.true_boxes = Input(shape=(1, 1, 1, max_box_per_image, 4))
 
-        self.feature_extractor = TinyYoloFeature(self.input_size)
+        self.feature_extractor = ResNet50Features(self.input_size)
 
         print(self.feature_extractor.get_output_shape())
         self.grid_h, self.grid_w = self.feature_extractor.get_output_shape()
@@ -257,7 +257,7 @@ class YOLO(object):
               log_dir,
               saved_weights_name='best_weights.h5',
               debug=False):
-
+        self.log_dir = log_dir
         self.batch_size = batch_size
         self.warmup_bs = warmup_epochs * \
             (train_times*(len(train_imgs)/batch_size+1) +
@@ -277,8 +277,7 @@ class YOLO(object):
         # Compile the model
         ############################################
 
-        optimizer = Adam(lr=learning_rate, beta_1=0.9,
-                         beta_2=0.999, epsilon=1e-08, decay=0.0)
+        optimizer = Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
         self.model.compile(loss=self.custom_loss, optimizer=optimizer)
 
         ############################################
@@ -308,8 +307,8 @@ class YOLO(object):
                                      jitter=False)
 
         callbacks = []
-        callback.append(ModelCheckpoint(saved_weights_name, monitor='val_loss', period=1))
-        callbacks.append(TensorBoard(log_dir=self.config['log_dir'], histogram_freq=0,write_graph=True, write_images=True))
+        callbacks.append(ModelCheckpoint(saved_weights_name, monitor='val_loss', period=1))
+        callbacks.append(TensorBoard(log_dir=self.log_dir, histogram_freq=0,write_graph=True, write_images=True))
         callbacks.append(TerminateOnNaN())
         ############################################
         # Start the training process

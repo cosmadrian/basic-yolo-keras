@@ -1,6 +1,6 @@
 {
     "model" : {
-        "architecture":         "TinySqueezeResNet",
+        "architecture":         "ResNet50Feature",
         "input_size":           224,
         "anchors":              [0.16, 0.40, 0.51, 1.24, 1.13, 2.82, 2.19, 4.54, 4.68, 4.86],
         "max_box_per_image":    10,
@@ -12,7 +12,7 @@
         "train_annotation_file":   "/home/cosmadrian/Desktop/licenta/next_gen/detection/annotations.json",
 
         "train_times":          10,
-        "pretrained_weights":   "/home/cosmadrian/Desktop/licenta/after_training/squeeze_sb_smaller/weights.07-0.24-0.90.hdf5",
+        "pretrained_weights":   "",
         "batch_size":           16,
         "learning_rate":        1e-4,
         "nb_epoch":             50,
@@ -29,7 +29,7 @@
     },
     "valid": {
         "valid_image_folder":   "",
-        "valid_annot_file":   "",
+        "valid_annotation_file":   "",
         "valid_times":          1
     }
 }
