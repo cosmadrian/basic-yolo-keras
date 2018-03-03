@@ -5,10 +5,11 @@ import numpy as np
 from imgaug import augmenters as iaa
 from keras.utils import Sequence
 import json
+import random
 from utils import BoundBox, bbox_iou
 
 
-def parse_annotation(annotation_file, image_dir):
+def parse_annotation(annotation_file, image_dir, size=-1):
     """
         There is only one type of label: "human".
         Annotation file format:
@@ -36,7 +37,15 @@ def parse_annotation(annotation_file, image_dir):
         })
         seen_labels['human'] += len(boxes)
 
-    return all_imgs, seen_labels
+    if size == -1:
+        return all_imgs, seen_labels
+
+    selected_images = random.sample(all_images, size)
+    seen_labels['human'] = 0
+    for image in selected_images:
+        seen_labels['human'] += len(image['object'])
+
+    return selected_images, seen_labels
 
 
 class BatchGenerator(Sequence):

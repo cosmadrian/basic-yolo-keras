@@ -29,7 +29,7 @@ def _main_(args):
 
     # parse annotations of the training set
     train_imgs, train_labels = parse_annotation(config['train']['train_annotation_file'],
-                                                config['train']['train_image_folder'])
+                                                config['train']['train_image_folder'], size=config['train']['train_size'])
 
     # parse annotations of the validation set, if any, otherwise split the training set
     if os.path.exists(config['valid']['valid_annotation_file']):
