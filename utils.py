@@ -68,6 +68,7 @@ def interval_overlap(interval_a, interval_b):
         else:
             return min(x2, x4) - x3
 
+
 def decode_netout(netout, obj_threshold=0.3, nms_threshold=0.3, anchors=[], nb_class=1):
     grid_h, grid_w, nb_box = netout.shape[:3]
 
@@ -75,7 +76,8 @@ def decode_netout(netout, obj_threshold=0.3, nms_threshold=0.3, anchors=[], nb_c
 
     # decode the output by the network
     netout[..., 4] = sigmoid(netout[..., 4])
-    netout[..., 5:] = netout[..., 4][..., np.newaxis] * softmax(netout[..., 5:])
+    netout[..., 5:] = netout[..., 4][...,
+                                     np.newaxis] * softmax(netout[..., 5:])
     netout[..., 5:] *= netout[..., 5:] > obj_threshold
 
     for row in range(grid_h):
@@ -138,3 +140,22 @@ def softmax(x, axis=-1, t=-100.):
     e_x = np.exp(x)
 
     return e_x / e_x.sum(axis, keepdims=True)
+
+
+def draw_boxes(image, boxes, labels):
+
+    for box in boxes:
+        xmin = int((box.x - box.w/2) * image.shape[1])
+        xmax = int((box.x + box.w/2) * image.shape[1])
+        ymin = int((box.y - box.h/2) * image.shape[0])
+        ymax = int((box.y + box.h/2) * image.shape[0])
+
+        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 255, 0), 3)
+        cv2.putText(image,
+                    str(box.get_score()),
+                    (xmin, ymin - 13),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1e-3 * image.shape[0],
+                    (0, 255, 0), 2)
+
+    return image

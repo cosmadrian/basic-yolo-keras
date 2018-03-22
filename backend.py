@@ -1,6 +1,8 @@
 import keras
 from keras_compressor import custom_layers
 from keras.applications.resnet50 import ResNet50
+from keras_squeeze_net import squeeze_net
+
 
 class BaseFeatureExtractor(object):
     # to be defined in each subclass

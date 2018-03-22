@@ -10,11 +10,14 @@ from preprocessing import BatchGenerator
 from keras.callbacks import TerminateOnNaN, ModelCheckpoint, TensorBoard
 from utils import BoundBox, bbox_iou, interval_overlap, decode_netout
 from backend import ResNet50Features
+from keras_squeeze_net import squeeze_net
 
+def normalize(image):
+    return image / 255
 
 class YOLO(object):
-    def __init__(self, architecture,
-                 input_size,
+    def __init__(self,
+                input_size,
                  labels,
                  max_box_per_image,
                  anchors):
@@ -32,39 +35,13 @@ class YOLO(object):
         ##########################
         # Make the model
         ##########################
-
-        # make the feature extractor layers
-        input_image = Input(shape=(self.input_size, self.input_size, 3))
-        self.true_boxes = Input(shape=(1, 1, 1, max_box_per_image, 4))
-
-        self.feature_extractor = ResNet50Features(self.input_size)
-
-        print(self.feature_extractor.get_output_shape())
-        self.grid_h, self.grid_w = self.feature_extractor.get_output_shape()
-        features = self.feature_extractor.extract(input_image)
-
-        # make the object detection layer
-        output = Conv2D(self.nb_box * (4 + 1 + self.nb_class),
-                        (1, 1), strides=(1, 1),
-                        padding='same',
-                        name='conv_23',
-                        kernel_initializer='lecun_normal')(features)
-        output = Reshape((self.grid_h, self.grid_w, self.nb_box,
-                          4 + 1 + self.nb_class))(output)
-        output = Lambda(lambda args: args[0])([output, self.true_boxes])
-
-        self.model = Model([input_image, self.true_boxes], output)
-
-        # initialize the weights of the detection layer
-        layer = self.model.layers[-4]
-        weights = layer.get_weights()
-
-        new_kernel = np.random.normal(size=weights[0].shape) / (self.grid_h*self.grid_w)
-        new_bias = np.random.normal(size=weights[1].shape) / (self.grid_h*self.grid_w)
-
-        layer.set_weights([new_kernel, new_bias])
-
-        # print a summary of the whole model
+        self.model, self.true_boxes, self.grid_h, self.grid_w = squeeze_net({
+            'IMAGE_H': self.input_size,
+            'IMAGE_W': self.input_size,
+            'TRUE_BOX_BUFFER': self.max_box_per_image,
+            'CLASS': self.nb_class,
+            'BOX': self.nb_box
+            })
         self.model.summary()
 
     def custom_loss(self, y_true, y_pred):
@@ -230,15 +207,14 @@ class YOLO(object):
 
     def predict(self, image):
         image = cv2.resize(image, (self.input_size, self.input_size))
-        image = self.feature_extractor.normalize(image)
+        image = normalize(image)
 
         input_image = image[:, :, ::-1]
         input_image = np.expand_dims(input_image, 0)
-        dummy_array = dummy_array = np.zeros(
-            (1, 1, 1, 1, self.max_box_per_image, 4))
+        dummy_array = dummy_array = np.zeros((1, 1, 1, 1, self.max_box_per_image, 4))
 
         netout = self.model.predict([input_image, dummy_array])[0]
-        boxes = self.decode_netout(netout, self.anchors, self.nb_class)
+        boxes = decode_netout(netout=netout, obj_threshold=0.1, nms_threshold=0.1, anchors=self.anchors, nb_class=self.nb_class)
 
         return boxes
 
@@ -300,10 +276,10 @@ class YOLO(object):
         # TODO split training data into train/val sets
         train_batch = BatchGenerator(train_imgs,
                                      generator_config,
-                                     norm=self.feature_extractor.normalize)
+                                     norm=normalize)
         valid_batch = BatchGenerator(valid_imgs,
                                      generator_config,
-                                     norm=self.feature_extractor.normalize,
+                                     norm=normalize,
                                      jitter=False)
 
         callbacks = []

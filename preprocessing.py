@@ -40,7 +40,7 @@ def parse_annotation(annotation_file, image_dir, size=-1):
     if size == -1:
         return all_imgs, seen_labels
 
-    selected_images = random.sample(all_images, size)
+    selected_images = random.sample(all_imgs, size)
     seen_labels['human'] = 0
     for image in selected_images:
         seen_labels['human'] += len(image['object'])
@@ -103,6 +103,7 @@ class BatchGenerator(Sequence):
         for train_instance in self.images[l_bound:r_bound]:
             # augment input image and fix object's position and size
             img, all_objs = self.aug_image(train_instance, jitter=self.jitter)
+            if img is None: continue
 
             # construct output from object's x, y, w, h
             true_box_index = 0
@@ -168,6 +169,7 @@ class BatchGenerator(Sequence):
 
         if image is None:
             print('Cannot find ', image_name)
+            return None, []
 
         h, w, c = image.shape
         all_objs = copy.deepcopy(train_instance['object'])
