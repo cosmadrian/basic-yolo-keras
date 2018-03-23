@@ -7,8 +7,8 @@ import cv2
 from keras.layers.merge import concatenate
 from keras.optimizers import Adam
 from preprocessing import BatchGenerator
-from keras.callbacks import TerminateOnNaN, ModelCheckpoint, TensorBoard
-from utils import BoundBox, bbox_iou, interval_overlap, decode_netout
+from keras.callbacks import TerminateOnNaN, ModelCheckpoint, TensorBoard, LearningRateScheduler
+from utils import BoundBox, bbox_iou, interval_overlap, decode_netout, learning_rate_schedule
 from keras_squeeze_net import squeeze_net
 
 def normalize(image):
@@ -272,7 +272,6 @@ class YOLO(object):
             'TRUE_BOX_BUFFER': self.max_box_per_image,
         }
 
-        # TODO split training data into train/val sets
         train_batch = BatchGenerator(train_imgs,
                                      generator_config,
                                      norm=normalize)
@@ -281,21 +280,21 @@ class YOLO(object):
                                      norm=normalize,
                                      jitter=False)
 
-        callbacks = []
-        callbacks.append(ModelCheckpoint(saved_weights_name, monitor='val_loss', period=1))
-        callbacks.append(TensorBoard(log_dir=self.log_dir, histogram_freq=0,write_graph=True, write_images=True))
-        callbacks.append(TerminateOnNaN())
+        callbacks = [
+            ModelCheckpoint(saved_weights_name, monitor='val_loss', period=1),
+            TensorBoard(log_dir=self.log_dir, histogram_freq=0,write_graph=True, write_images=True),
+            LearningRateScheduler(learning_rate_schedule(nb_epoch, learning_rate)),
+            TerminateOnNaN(),
+        ]
         ############################################
         # Start the training process
         ############################################
 
         self.model.fit_generator(generator=train_batch,
-                                 steps_per_epoch=len(
-                                     train_batch) * train_times,
+                                 steps_per_epoch=len(train_batch) * train_times,
                                  epochs=nb_epoch,
                                  validation_data=valid_batch,
-                                 validation_steps=len(
-                                     valid_batch) * valid_times,
+                                 validation_steps=len(valid_batch) * valid_times,
                                  callbacks=callbacks,
                                  workers=3,
                                  max_queue_size=8)

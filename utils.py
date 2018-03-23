@@ -159,3 +159,11 @@ def draw_boxes(image, boxes, labels):
                     (0, 255, 0), 2)
 
     return image
+
+
+def learning_rate_schedule(max_epochs, initial_lr):
+    def _schedule(epoch, lr):
+        # TODO
+        # Does Adam need learning rate schedule?
+        return lr
+    return _schedule
