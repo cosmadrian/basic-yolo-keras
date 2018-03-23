@@ -8,7 +8,7 @@ from keras.layers.merge import concatenate
 from keras.optimizers import Adam
 from preprocessing import BatchGenerator
 from keras.callbacks import TerminateOnNaN, ModelCheckpoint, TensorBoard, LearningRateScheduler
-from utils import BoundBox, bbox_iou, interval_overlap, decode_netout, learning_rate_schedule
+from utils import BoundBox, bbox_iou, interval_overlap, decode_netout, step_lr_schedule
 from keras_squeeze_net import squeeze_net
 
 def normalize(image):
@@ -282,8 +282,8 @@ class YOLO(object):
 
         callbacks = [
             ModelCheckpoint(saved_weights_name, monitor='val_loss', period=1),
-            TensorBoard(log_dir=self.log_dir, histogram_freq=0,write_graph=True, write_images=True),
-            LearningRateScheduler(learning_rate_schedule(nb_epoch, learning_rate)),
+            TensorBoard(log_dir=self.log_dir, histogram_freq=0, write_graph=True, write_images=True),
+            LearningRateScheduler(step_lr_schedule(nb_epoch, learning_rate)),
             TerminateOnNaN(),
         ]
         ############################################

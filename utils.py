@@ -161,9 +161,19 @@ def draw_boxes(image, boxes, labels):
     return image
 
 
-def learning_rate_schedule(max_epochs, initial_lr):
-    def _schedule(epoch, lr):
-        # TODO
-        # Does Adam need learning rate schedule?
+def step_lr_schedule(max_epochs, initial_lr):
+    def _schedule(epoch):
+        lr = 0
+        if epoch / max_epochs < 0.33:
+            lr = initial_lr
+
+        if epoch / max_epochs >= 0.33 and epoch / max_epochs < 0.66:
+            lr = initial_lr / 10
+
+        if epoch / max_epochs >= 0.66:
+            lr = initial_lr / 100
+
+        print("Learning rate: ", lr)
         return lr
+
     return _schedule
