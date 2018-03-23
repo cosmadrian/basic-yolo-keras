@@ -9,7 +9,6 @@ from keras.optimizers import Adam
 from preprocessing import BatchGenerator
 from keras.callbacks import TerminateOnNaN, ModelCheckpoint, TensorBoard
 from utils import BoundBox, bbox_iou, interval_overlap, decode_netout
-from backend import ResNet50Features
 from keras_squeeze_net import squeeze_net
 
 def normalize(image):
