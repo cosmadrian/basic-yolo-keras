@@ -7,7 +7,7 @@
     },
 
     "train": {
-        "train_image_folder":   "detection/coco_detection",
+        "train_image_folder":   "full_224/persons/",
         "train_annotation_file":   "detection/annotations.json",
 
 	"train_size": 		10000,
