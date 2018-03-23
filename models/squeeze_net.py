@@ -76,16 +76,3 @@ def squeeze_net_body(input):
     x = Dropout(0.3)(x)
     return x
 
-
-def squeeze_net(options):
-    input_image = Input(shape=(options['IMAGE_H'], options['IMAGE_W'], 3))
-    true_boxes  = Input(shape=(1, 1, 1, options['TRUE_BOX_BUFFER'] , 4))
-    body = squeeze_net_body(input_image)
-    x = Conv2D(options['BOX'] * (5 + options['CLASS']), (1, 1), strides=(1,1), padding='same')(body)
-    grid_h, grid_w = x.shape[1:3]
-    grid_h, grid_w = int(grid_h), int(grid_w)
-
-    output = Reshape((grid_h, grid_w, options['BOX'], 5 + options['CLASS']))(x)
-    output = Lambda(lambda args: args[0])([output, true_boxes])
-
-    return Model([input_image, true_boxes], output), true_boxes, grid_h, grid_w
