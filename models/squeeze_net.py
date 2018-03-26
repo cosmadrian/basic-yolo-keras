@@ -18,7 +18,7 @@ _SqueezeConv2D = partial(Conv2D, padding='same')
 @functools.wraps(Conv2D)
 def SqueezeConv2D(*args, **kwargs):
     """Wrapper to set SqueezeNet weight regularizer for Convolution2D."""
-    squeezenet_conv_kwargs = {'kernel_regularizer': l2(5e-4), 'kernel_initializer':'lecun_normal'}
+    squeezenet_conv_kwargs = {}
     squeezenet_conv_kwargs.update(kwargs)
     return _SqueezeConv2D(*args, **squeezenet_conv_kwargs)
 
@@ -30,7 +30,7 @@ def BN_Leaky():
 
 def SqueezeConv2D_BN_Leaky(*args, **kwargs):
     """SqueezeNet Convolution2D followed by BatchNormalization and LeakyReLU."""
-    bias_kwargs = {'use_bias': True}
+    bias_kwargs = {'use_bias': False}
     bias_kwargs.update(kwargs)
     return compose(
         SqueezeConv2D(*args, **bias_kwargs),
@@ -38,16 +38,11 @@ def SqueezeConv2D_BN_Leaky(*args, **kwargs):
         LeakyReLU(alpha=0.3))
 
 def fire(expand1, expand2, squeeze):
-    def pad(x):
-        import tensorflow as tf
-        padding = tf.constant([[0, 0], [1, 1], [1, 1], [0, 0]])
-        return tf.pad(x, padding, "CONSTANT")
     def _fire(_input):
         x = SqueezeConv2D_BN_Leaky(squeeze, (1, 1), strides=(1, 1))(_input)
 
         _squeeze = SqueezeConv2D_BN_Leaky(expand1, (1, 1), strides=(1, 1))(x)
-        # padded = Lambda(pad)(x)
-        _expand = SqueezeConv2D_BN_Leaky(expand2, (3, 3), strides=(1, 1), padding='same')(x)
+        _expand = SqueezeConv2D_BN_Leaky(expand2, (3, 3), strides=(1, 1))(x)
         return Concatenate(axis=3)([_squeeze, _expand])
     return _fire
 

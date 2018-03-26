@@ -1,0 +1,35 @@
+{
+    "model" : {
+        "input_size":           416,
+        "anchors":              [5.31,14.48, 9.76,17.27, 13.80,19.09, 18.00,20.28, 18.63,13.04],
+        "max_box_per_image":    10,
+        "labels":               ["human"]
+    },
+
+    "train": {
+        "train_image_folder":   "/home/cosmadrian/Desktop/licenta/inria/",
+        "train_annotation_file":   "/home/cosmadrian/Desktop/licenta/inria/annotations.json",
+
+        "train_size":           5,
+        "train_times":          1,
+        "pretrained_weights":   "",
+        "batch_size":           1,
+        "learning_rate":        1e-4,
+        "nb_epoch":             50,
+        "warmup_epochs":        0,
+
+        "object_scale":         1.0 ,
+        "no_object_scale":      1.0,
+        "coord_scale":          1.0,
+        "class_scale":          1.0,
+
+        "saved_weights_name":   "yolo/yolo_inria_weights.{epoch:02d}-{val_loss:.2f}.hdf5",
+        "log_dir":              "yolo/",
+        "debug":                true
+    },
+    "valid": {
+        "valid_image_folder":   "",
+        "valid_annotation_file":   "",
+        "valid_times":          1
+    }
+}

@@ -8,6 +8,7 @@ from preprocessing import BatchGenerator
 from keras.callbacks import TerminateOnNaN, ModelCheckpoint, TensorBoard, LearningRateScheduler
 from utils import BoundBox, bbox_iou, interval_overlap, decode_netout, step_lr_schedule
 from models.squeeze_net import squeeze_net_body
+from models.darknet import darknet_body
 
 def build_model(options, architecture):
     input_image = Input(shape=(options['IMAGE_H'], options['IMAGE_W'], 3))
@@ -52,7 +53,7 @@ class YOLO(object):
             'TRUE_BOX_BUFFER': self.max_box_per_image,
             'CLASS': self.nb_class,
             'BOX': self.nb_box
-            }, squeeze_net_body)
+            }, darknet_body) # TODO use config to select architecture
         self.model.summary()
 
     def custom_loss(self, y_true, y_pred):
@@ -190,6 +191,7 @@ class YOLO(object):
         loss_xy = tf.reduce_sum(tf.square(true_box_xy-pred_box_xy) * coord_mask) / (nb_coord_box + 1e-6) / 2.
         loss_wh = tf.reduce_sum(tf.square(true_box_wh-pred_box_wh) * coord_mask) / (nb_coord_box + 1e-6) / 2.
         loss_conf = tf.reduce_sum(tf.square(true_box_conf-pred_box_conf) * conf_mask) / (nb_conf_box + 1e-6) / 2.
+        # loss_class = 0
         loss_class = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class, logits=pred_box_class)
         loss_class = tf.reduce_sum(loss_class * class_mask) / (nb_class_box + 1e-6)
 
@@ -225,7 +227,7 @@ class YOLO(object):
         dummy_array = dummy_array = np.zeros((1, 1, 1, 1, self.max_box_per_image, 4))
 
         netout = self.model.predict([input_image, dummy_array])[0]
-        boxes = decode_netout(netout=netout, obj_threshold=0.1, nms_threshold=0.1, anchors=self.anchors, nb_class=self.nb_class)
+        boxes = decode_netout(netout=netout, obj_threshold=0.3, nms_threshold=0.3, anchors=self.anchors, nb_class=self.nb_class)
 
         return boxes
 

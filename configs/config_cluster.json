@@ -10,7 +10,7 @@
         "train_image_folder":   "full_224/persons/",
         "train_annotation_file":   "detection/annotations.json",
 
-	"train_size": 		10000,
+	    "train_size": 		10000,
         "train_times":          5,
         "pretrained_weights":   "",
         "batch_size":           16,

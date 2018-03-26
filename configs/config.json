@@ -1,6 +1,5 @@
 {
     "model" : {
-        "architecture":         "ResNet50Feature",
         "input_size":           224,
         "anchors":              [0.16, 0.40, 0.51, 1.24, 1.13, 2.82, 2.19, 4.54, 4.68, 4.86],
         "max_box_per_image":    10,
