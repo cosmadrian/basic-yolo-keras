@@ -7,15 +7,15 @@
     },
 
     "train": {
-        "train_image_folder":   "/home/cosmadrian/Desktop/licenta/inria/",
-        "train_annotation_file":   "/home/cosmadrian/Desktop/licenta/inria/annotations.json",
+        "train_image_folder":   "/home/cosmadrian/Desktop/inria/",
+        "train_annotation_file":   "/home/cosmadrian/Desktop/inria/annotations.json",
 
-        "train_size":           5,
+        "train_size":           2,
         "train_times":          1,
         "pretrained_weights":   "",
         "batch_size":           1,
         "learning_rate":        1e-4,
-        "nb_epoch":             50,
+        "nb_epoch":             100,
         "warmup_epochs":        0,
 
         "object_scale":         1.0 ,

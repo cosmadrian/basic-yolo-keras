@@ -116,7 +116,7 @@ def main(argv):
         config = json.load(config_buffer)
 
     train_imgs, train_labels = parse_annotation(
-        config['train']['train_annotation_file'], config['train']['train_image_folder'])
+        config['train']['train_annotation_file'], config['train']['train_image_folder'], config['model']['input_size'])
 
     grid_w = config['model']['input_size'] / 32
     grid_h = config['model']['input_size'] / 32

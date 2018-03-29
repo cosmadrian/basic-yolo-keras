@@ -2,9 +2,21 @@ import numpy as np
 import os
 import xml.etree.ElementTree as ET
 import tensorflow as tf
+import keras
 import copy
 import cv2
 
+class OutputObserver(keras.callbacks.Callback):
+    def __init__(self, yolo, img, output_folder):
+        self.yolo = yolo
+        self.img = img
+        self.output_folder = output_folder
+
+    def on_epoch_end(self, epoch, logs={}):
+        boxes = self.yolo.predict(self.img)
+        rects = copy.deepcopy(self.img)
+        rects = draw_boxes(rects, boxes, ['human'])
+        cv2.imwrite(self.output_folder + '/output' + str(epoch) + '.png', rects)
 
 class BoundBox:
     def __init__(self, x, y, w, h, c=None, classes=None):

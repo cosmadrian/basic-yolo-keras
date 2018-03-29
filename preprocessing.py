@@ -9,7 +9,7 @@ import random
 from utils import BoundBox, bbox_iou
 
 
-def parse_annotation(annotation_file, image_dir, size=-1):
+def parse_annotation(annotation_file, image_dir, input_size=224, size=-1):
     """
         There is only one type of label: "human".
         Annotation file format:
@@ -25,14 +25,14 @@ def parse_annotation(annotation_file, image_dir, size=-1):
     for name, boxes in annotations.items():
         all_imgs.append({
             'filename': os.path.abspath(image_dir) + '/' + name,
-            'width': 224,
-            'height': 224,
+            'width': input_size,
+            'height': input_size,
             'object': [{
                 'name': 'human',
-                'xmin': x,
-                'xmax': x + w,
-                'ymin': y,
-                'ymax': y + h
+                'xmin': int(x),
+                'xmax': int(x + w),
+                'ymin': int(y),
+                'ymax': int(y + h)
             } for x, y, w, h in boxes]
         })
         seen_labels['human'] += len(boxes)
@@ -41,9 +41,14 @@ def parse_annotation(annotation_file, image_dir, size=-1):
         return all_imgs, seen_labels
 
     selected_images = random.sample(all_imgs, size)
+
     seen_labels['human'] = 0
     for image in selected_images:
         seen_labels['human'] += len(image['object'])
+
+    print("Selected images:")
+    for image in selected_images:
+        print(image['filename'])
 
     return selected_images, seen_labels
 
@@ -174,6 +179,8 @@ class BatchGenerator(Sequence):
 
         h, w, c = image.shape
         all_objs = copy.deepcopy(train_instance['object'])
+        # TESTING
+        return image, all_objs
 
         if jitter:
             image = self.aug_pipe.augment_image(image)

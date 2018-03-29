@@ -6,7 +6,7 @@ import cv2
 from keras.optimizers import Adam
 from preprocessing import BatchGenerator
 from keras.callbacks import TerminateOnNaN, ModelCheckpoint, TensorBoard, LearningRateScheduler
-from utils import BoundBox, bbox_iou, interval_overlap, decode_netout, step_lr_schedule
+from utils import BoundBox, bbox_iou, interval_overlap, decode_netout, step_lr_schedule, OutputObserver
 from models.squeeze_net import squeeze_net_body
 from models.darknet import darknet_body
 
@@ -17,6 +17,7 @@ def build_model(options, architecture):
     x = Conv2D(options['BOX'] * (5 + options['CLASS']), (1, 1), strides=(1,1), padding='same')(body)
     grid_h, grid_w = x.shape[1:3]
     grid_h, grid_w = int(grid_h), int(grid_w)
+    print(grid_h, grid_w)
 
     output = Reshape((grid_h, grid_w, options['BOX'], 5 + options['CLASS']))(x)
     output = Lambda(lambda args: args[0])([output, true_boxes])
@@ -32,7 +33,12 @@ class YOLO(object):
                 input_size,
                  labels,
                  max_box_per_image,
+                 output_observer_img,
+                 output_observer_out,
                  anchors):
+
+        self.output_observer_out = output_observer_out
+        self.output_observer_img = output_observer_img
 
         self.input_size = input_size
 
@@ -288,6 +294,7 @@ class YOLO(object):
 
         train_batch = BatchGenerator(train_imgs,
                                      generator_config,
+                                     shuffle=True,
                                      norm=normalize)
         valid_batch = BatchGenerator(valid_imgs,
                                      generator_config,
@@ -295,6 +302,7 @@ class YOLO(object):
                                      jitter=False)
 
         callbacks = [
+            OutputObserver(self, cv2.imread(self.output_observer_img), self.output_observer_out),
             ModelCheckpoint(saved_weights_name, monitor='val_loss', period=1),
             TensorBoard(log_dir=self.log_dir, histogram_freq=0, write_graph=True, write_images=True),
             LearningRateScheduler(step_lr_schedule(nb_epoch, learning_rate)),
