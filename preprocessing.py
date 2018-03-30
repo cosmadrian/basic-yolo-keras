@@ -46,10 +46,6 @@ def parse_annotation(annotation_file, image_dir, input_size=224, size=-1):
     for image in selected_images:
         seen_labels['human'] += len(image['object'])
 
-    print("Selected images:")
-    for image in selected_images:
-        print(image['filename'])
-
     return selected_images, seen_labels
 
 
