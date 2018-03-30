@@ -215,7 +215,7 @@ class YOLO(object):
             loss = tf.Print(loss, [loss_xy], message='Loss XY \t', summarize=1000)
             loss = tf.Print(loss, [loss_wh], message='Loss WH \t', summarize=1000)
             loss = tf.Print(loss, [loss_conf], message='Loss Conf \t', summarize=1000)
-            loss = tf.Print(loss, [loss_class], message='Loss Class \t', summarize=1000)
+            # loss = tf.Print(loss, [loss_class], message='Loss Class \t', summarize=1000)
             loss = tf.Print(loss, [loss], message='Total Loss \t', summarize=1000)
             loss = tf.Print(loss, [current_recall], message='Current Recall \t', summarize=1000)
             loss = tf.Print(loss, [total_recall/seen], message='Average Recall \t', summarize=1000)
