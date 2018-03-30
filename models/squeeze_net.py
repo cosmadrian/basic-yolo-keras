@@ -67,6 +67,7 @@ def squeeze_net_body(input):
     skip4 = MaxPooling2D((2, 2))(x)
     x = fire(squeeze=64, expand1=256, expand2=256)(skip4)
     x = add([x, skip4])
+    x = MaxPooling2D((4, 4))(x)
     x = BN_Leaky()(x)
     x = Dropout(0.3)(x)
     return x

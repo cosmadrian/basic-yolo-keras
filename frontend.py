@@ -44,7 +44,7 @@ class YOLO(object):
 
         self.labels = list(labels)
         self.nb_class = len(self.labels)
-        self.nb_box = len(anchors)//2 
+        self.nb_box = len(anchors)//2
         self.class_wt = np.ones(self.nb_class, dtype='float32')
         self.anchors = anchors
 
@@ -59,7 +59,7 @@ class YOLO(object):
             'TRUE_BOX_BUFFER': self.max_box_per_image,
             'CLASS': self.nb_class,
             'BOX': self.nb_box
-            }, darknet_body) # TODO use config to select architecture
+            }, squeeze_net_body) # TODO use config to select architecture
         self.model.summary()
 
     def custom_loss(self, y_true, y_pred):
@@ -126,7 +126,7 @@ class YOLO(object):
         true_box_conf = iou_scores * y_true[..., 4]
 
         # adjust class probabilities
-        true_box_class = tf.argmax(y_true[..., 5:], -1)
+        # true_box_class = tf.argmax(y_true[..., 5:], -1)
 
         """
         Determine the masks
@@ -170,7 +170,7 @@ class YOLO(object):
         conf_mask = conf_mask + y_true[..., 4] * self.object_scale
 
         # class mask: simply the position of the ground truth boxes (the predictors)
-        class_mask = y_true[..., 4] * tf.gather(self.class_wt, true_box_class) * self.class_scale
+        # class_mask = y_true[..., 4] * tf.gather(self.class_wt, true_box_class) * self.class_scale
 
         """
         Warm-up training
@@ -192,16 +192,17 @@ class YOLO(object):
         """
         nb_coord_box = tf.reduce_sum(tf.to_float(coord_mask > 0.0))
         nb_conf_box = tf.reduce_sum(tf.to_float(conf_mask > 0.0))
-        nb_class_box = tf.reduce_sum(tf.to_float(class_mask > 0.0))
+        # nb_class_box = tf.reduce_sum(tf.to_float(class_mask > 0.0))
 
         loss_xy = tf.reduce_sum(tf.square(true_box_xy-pred_box_xy) * coord_mask) / (nb_coord_box + 1e-6) / 2.
-        loss_wh = tf.reduce_sum(tf.square(true_box_wh-pred_box_wh) * coord_mask) / (nb_coord_box + 1e-6) / 2.
+        # loss_wh = tf.reduce_sum(tf.square(true_box_wh-pred_box_wh) * coord_mask) / (nb_coord_box + 1e-6) / 2.
+        loss_wh = tf.reduce_sum(tf.square(true_box_wh-pred_box_wh) * coord_mask)
         loss_conf = tf.reduce_sum(tf.square(true_box_conf-pred_box_conf) * conf_mask) / (nb_conf_box + 1e-6) / 2.
         # loss_class = 0
-        loss_class = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class, logits=pred_box_class)
-        loss_class = tf.reduce_sum(loss_class * class_mask) / (nb_class_box + 1e-6)
+        # loss_class = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class, logits=pred_box_class)
+        # loss_class = tf.reduce_sum(loss_class * class_mask) / (nb_class_box + 1e-6)
 
-        loss = loss_xy + loss_wh + loss_conf + loss_class
+        loss = loss_xy + loss_wh + loss_conf
 
         if self.debug:
             nb_true_box = tf.reduce_sum(y_true[..., 4])
